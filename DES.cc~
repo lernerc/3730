@@ -1,0 +1,69 @@
+#include <iostream>
+#include <algorithm>
+using namespace std;
+
+class DESAlgorithm {
+public:
+   DESAlgorithm(const int & m = 0, const int &k = 0) : message(m), key(k) {}
+   void inputMessage(int m) {message = m}
+   void inputKey(int k) {message = k}
+   void calculate();
+private:
+   void IP();
+   void IP_inverse();
+   void round();
+   void E(int);
+   void K(int);
+   void S_box();
+   void f(int, int);
+
+   // input message and key
+   int message;
+   int key;
+   // previous L, and R
+   int L_p, R_p;
+   //current L and R
+   int L, R;
+   //previous C and D
+   int C_p, D_p;
+   // current C and D
+   int C, D;
+   
+};
+
+void DESAlgorithm::calculate() {
+
+}
+
+void DESAlgorithm::IP() {
+
+}
+
+void DESAlgorithm::IP_inverse() {
+
+}
+
+void DESAlgorithm::round() {
+
+}
+
+void DESAlgorithm::E(int) {
+
+}
+
+void DESAlgorithm::K(int) {
+
+}
+
+void DESAlgorithm::S_box() {
+
+}
+
+void DESAlgorithm::f(int, int) {
+
+}
+
+int main() {
+
+   return 0;
+}
