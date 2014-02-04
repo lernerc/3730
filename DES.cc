@@ -111,27 +111,37 @@ const int S[8][64] = {
     7,  11,  4,  1,  9, 12, 14,  2,  0,  6, 10, 13, 15,  3,  5,  8, 
     2,   1, 14,  7,  4, 10,  8, 13, 15, 12,  9,  0,  3,  5,  6, 11}};
 
-const int PC_1[] = {56, 48, 40, 32, 24, 16,  8, 
-		    0,  57, 49, 41, 33, 25, 17, 
-		    9,   1, 58, 50, 42, 34, 26, 
-		    18, 10,  2, 59, 51, 43, 35, 
-		    
-		    62, 54, 46, 38, 30, 22, 14, 
-		    6,  61, 53, 45, 37, 29, 21, 
-		    13,  5, 60, 52, 44, 36, 28, 
-		    20, 12,  4, 27, 19, 11,  3};
+const int PC1[] = {56, 48, 40, 32, 24, 16,  8, 
+		   0,  57, 49, 41, 33, 25, 17, 
+		   9,   1, 58, 50, 42, 34, 26, 
+		   18, 10,  2, 59, 51, 43, 35, 
+		   
+		   62, 54, 46, 38, 30, 22, 14, 
+		   6,  61, 53, 45, 37, 29, 21, 
+		   13,  5, 60, 52, 44, 36, 28, 
+		   20, 12,  4, 27, 19, 11,  3};
 
-const int PC_2[] = {13, 16, 10, 23,  0,  4, 
-		    2, 27, 14,  5, 20,  9, 
-		    22, 18, 11,  3, 25,  7, 
-		    15,  6, 26, 19, 12,  1, 
-		    40, 51, 30, 36, 46, 54, 
-		    29, 39, 50, 44, 32, 47, 
-		    43, 48, 38, 55, 33, 52, 
-		    45, 41, 49, 35, 28, 31};
+const int PC2[] = {13, 16, 10, 23,  0,  4, 
+		   2,  27, 14,  5, 20,  9, 
+		   22, 18, 11,  3, 25,  7, 
+		   15,  6, 26, 19, 12,  1, 
+		   40, 51, 30, 36, 46, 54, 
+		   29, 39, 50, 44, 32, 47, 
+		   43, 48, 38, 55, 33, 52, 
+		   45, 41, 49, 35, 28, 31};
 
 const int left_shift[] =
 {1,  1,  2,  2,  2,  2,  2,  2,  1,  2,  2,  2,  2,  2,  2,  1};
+
+// guaranted positive shift number
+void leftShift(int array[], const int &size, const int &shift) {
+   int *tmp = new int[size];
+   copy(array, array + size, tmp);
+   for(int i = 0; i < size; i++) {
+      array[i] = tmp[(i + shift) % size];
+   }
+   delete [] tmp;
+}
 
 void convert(const string& hex, int bin[], const int size) {
 
@@ -173,6 +183,7 @@ public:
 private:
    void IP_calc();
    void IP_inverse_calc();
+   void initialize_K();
    void round();
    void E_calc(int);
    void K_calc(int);
@@ -185,7 +196,8 @@ private:
    // L and R values at each step
    int L[17][32], R[17][32];
    // C and D at each step
-   int C[17][32], D[17][32];
+   int C[17][28], D[17][28];
+   int K[17][56];
    string ciphertext;
    int E_i[48];
    
@@ -207,19 +219,35 @@ void DES::calculate() {
    }
    cout << endl;
 
+   initialize_K();
+  
    cin.get();
-   for(int i = 1; i <= 16; i++) {
+   for(int r = 1; r <= 16; r++) {
+      copy(R[r-1], R[r-1] + 32, L[r]);
+
       // output E(R_(i-1))
-      E_calc(i);
-      cout << "E_" << left << setw(2) << i << ": ";
+      E_calc(r);
+      cout << "E_" << left << setw(2) << r << ": ";
       for(int j = 0; j < 48; j++) {
 	 cout << E_i[j];
       }
       cout << endl;
       // output K_i
-
+      K_calc(r);
+      cout << "K_" << left << setw(2) << r << ": ";
+      for(int i = 0; i < 48; i++) {
+	 cout << K[r][i];
+      }
+      cout << endl;
       // output E(R_(i-1) XOR K_i
-
+      cout << "E(R_" << left << setw(2) << r-1 << ") XOR K_" << setw(2) << r
+	   << ": " << endl;
+      for(int i = 0; i < 48; i++) {
+	 E_i[i] = E_i[i] ^ K[r][i];
+	 cout << E_i[i];
+      }
+      cout << endl;
+      
       // output S-box output
 
       // output f(R_(i-1), K_i)
@@ -243,19 +271,50 @@ void DES::IP_inverse_calc() {
 
 }
 
+void DES::initialize_K() {
+
+   cout << "key without the parity check" << endl;
+   for(int i = 0; i < 8; i++) {
+      for(int j = 0; j < 7; j++) {
+	 cout << key[i*8 + j];
+      }
+   }
+   cout << endl;
+   for(int i = 0; i < 28; i++) {
+      C[0][i] = key[PC1[i]];
+   }
+   for(int i = 0; i < 28; i++) {
+      D[0][i] = key[PC1[i + 28]];
+   }
+}
+
 void DES::round() {
 
 }
 
-void DES::E_calc(int round) {
+void DES::E_calc(int r) {
 
    for(int i = 0; i < 48; i++) {
-      E_i[i] = R[round - 1][E[i]];
+      E_i[i] = R[r - 1][E[i]];
    }
 }
 
-void DES::K_calc(int) {
+void DES::K_calc(int r) {
+   // next C and D are the previous C and D after the left shifts
+   copy(C[r-1], C[r-1] + 28, C[r]);
+   copy(D[r-1], D[r-1] + 28, D[r]);
+   // do left shifts to C and D
+   leftShift(C[r], 28, left_shift[r-1]);
+   leftShift(D[r], 28, left_shift[r-1]);
+   
+   // perform PC2 on combined C and D
+   int tmp[56];
+   copy(C[r], C[r] + 28, tmp);
+   copy(D[r], D[r] + 28, tmp + 28);
 
+   for(int i = 0; i < 48; i++) {
+      K[r][i] = tmp[PC2[i]];
+   }
 }
 
 void DES::S_box() {
