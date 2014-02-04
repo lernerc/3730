@@ -187,7 +187,7 @@ private:
    void round();
    void E_calc(int);
    void K_calc(int);
-   void S_box();
+   void S_box(int);
    void f(int, int);
 
    // input message and key
@@ -200,7 +200,7 @@ private:
    int K[17][56];
    string ciphertext;
    int E_i[48];
-   
+   int s_box[32];
 };
 
 void DES::calculate() {
@@ -249,7 +249,12 @@ void DES::calculate() {
       cout << endl;
       
       // output S-box output
-
+      S_box(r);
+      cout << "S-box output:" << endl;
+      for(int i = 0; i < 32; i++) {
+	cout << s_box[i];
+      }
+      cout << endl;
       // output f(R_(i-1), K_i)
 
       // output L_i and R_i
@@ -317,7 +322,26 @@ void DES::K_calc(int r) {
    }
 }
 
-void DES::S_box() {
+void DES::S_box(int r) {
+  int tmp = E_i[r];
+  int number = 0;
+  for(int s = 8; s >= 0; s--) {
+    int row = tmp % 2;
+    tmp /=2;
+    int col = tmp % 2;
+    tmp /= 2;
+    col += (tmp % 2) * 2;
+    tmp /= 2;
+    col += (tmp % 2) * 4;
+    tmp /= 2;
+    row += (tmp % 2) * 8;
+    number += (S[s][row*8 + col])*(1 << (8 - s));
+  }
+
+  for(int i = 31; i >= 0; i--) {
+    s_box[i] = number % 2;
+    number /=2;
+  }
 
 }
 
