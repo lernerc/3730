@@ -7,22 +7,22 @@
 
 /*
   
-Implement the DES algorithm. 
-Let the user input the key and plaintext. (100 marks) 
+  Implement the DES algorithm. 
+  Let the user input the key and plaintext. (100 marks) 
 
-You can use any language to implement it.
-Both encryption and decryption are required. 
+  You can use any language to implement it.
+  Both encryption and decryption are required. 
 
 
 
-Key and Plaintext are hexadecimal numbers. 
+  Key and Plaintext are hexadecimal numbers. 
 
-Output the following values (Binary numbers) for each round: 
+  Output the following values (Binary numbers) for each round: 
 
-E(R_(i-1)), K_i, E(R_(i-1_) XOR K_i, S-box output, f(R_(i-1), K_i), L_i, R_i  
+  E(R_(i-1)), K_i, E(R_(i-1_) XOR K_i, S-box output, f(R_(i-1), K_i), L_i, R_i  
  
-Make a pause for each round output.  
- */
+  Make a pause for each round output.  
+*/
 #include <iostream>
 #include <algorithm>
 #include <sstream>
@@ -182,14 +182,18 @@ public:
    }
    void calculate();
 private:
+   void output(int [], int);
+   void output(int [17][56], int, int);
+   void output(int [17][32], int, int);
+   void round(int);
    void IP_calc();
    void IP_inverse_calc();
    void initialize_K();
-   void round();
    void E_calc(int);
    void K_calc(int);
    void S_box(int);
    void f(int);
+   string calc_hex(int [64]);
 
    // input message and key
    int message[64];
@@ -202,79 +206,118 @@ private:
    string ciphertext;
    int E_i[48];
    int s_box[32];
+   int answer[64];
+   string hexAnswer;
 };
+
+void DES::output(int array[], int size) {
+   for(int i = 0; i < size; i++) {
+      cout << array[i];
+   }
+   cout << endl;
+}
+
+void DES::output(int array[17][56], int index, int size) {
+   for(int i = 0; i < size; i++) {
+      cout << array[index][i];
+   }
+   cout << endl;
+}
+
+void DES::output(int array[17][32], int index, int size) {
+   for(int i = 0; i < size; i++) {
+      cout << array[index][i];
+   }
+   cout << endl;
+}
+
+void DES::round(int r) {
+   copy(R[r-1], R[r-1] + 32, L[r]);
+
+   // output E(R_(i-1))
+   E_calc(r);
+   cout << "E(R_" << left << setw(2) << r << "): ";
+   output(E_i, 48);
+      
+   // output K_i
+   K_calc(r);
+   cout << "K_" << left << setw(2) << r << ": ";
+   output(K, r, 48);
+      
+   // output E(R_(i-1) XOR K_i
+   cout << "E(R_" << left << setw(2) << r-1 << ") XOR K_" << setw(2) << r
+	<< ": " << endl;
+   for(int i = 0; i < 48; i++) {
+      E_i[i] = E_i[i] ^ K[r][i];
+   }
+   output(E_i, 48);
+      
+   // output S-box output
+   S_box(r);
+   cout << "S-box output:" << endl;
+   output(s_box, 32);
+      
+   // output f(R_(i-1), K_i)
+   f(r);
+   cout << "f(R_" << left << setw(2) << r-1 << ", K_" << setw(2) << r 
+	<< "): ";
+   output(s_box, 32);
+      
+   // output L_i and R_i
+   if(r != 16)
+      cout << "L_" << setw(2) << r+1 << " = ";
+   cout << "R_" << setw(2) << r << ": ";
+   for(int i = 0; i < 48; i++) {
+      R[r][i] = s_box[i] ^ L[r - 1][i];
+   }
+   copy(E_i, E_i + 32, L[r + 1]);
+   output(R, r, 32);
+}
 
 void DES::calculate() {
    IP_calc();
    // output L0 and R0
    cout << "L_0: ";
-   for(int i = 0; i < 32; i++) {
-      cout << L[0][i];
-   }
-   cout << endl;
+   output(L[0], 32);
 
    cout << "L_1 = R_0: ";
    copy(R[0], R[0] + 32, L[1]);
-   for(int i = 0; i < 32; i++) {
-      cout << R[1][i];
-   }
-   cout << endl;
+   output(R, 0, 32);
 
    initialize_K();
   
    cin.get();
    for(int r = 1; r <= 16; r++) {
-      copy(R[r-1], R[r-1] + 32, L[r]);
-
-      // output E(R_(i-1))
-      E_calc(r);
-      cout << "E_" << left << setw(2) << r << ": ";
-      for(int j = 0; j < 48; j++) {
-	 cout << E_i[j];
-      }
-      cout << endl;
-      // output K_i
-      K_calc(r);
-      cout << "K_" << left << setw(2) << r << ": ";
-      for(int i = 0; i < 48; i++) {
-	 cout << K[r][i];
-      }
-      cout << endl;
-      // output E(R_(i-1) XOR K_i
-      cout << "E(R_" << left << setw(2) << r-1 << ") XOR K_" << setw(2) << r
-	   << ": " << endl;
-      for(int i = 0; i < 48; i++) {
-	 E_i[i] = E_i[i] ^ K[r][i];
-	 cout << E_i[i];
-      }
-      cout << endl;
+      round(r);
       
-      // output S-box output
-      S_box(r);
-      cout << "S-box output:" << endl;
-      for(int i = 0; i < 32; i++) {
-	cout << s_box[i];
-      }
-      cout << endl;
-      // output f(R_(i-1), K_i)
-      f(r);
-      cout << "f(R_" << left << setw(2) << r-1 << ", K_" << setw(2) << r 
-	   << ": ";
-      for(int i = 0; i < 32; i++) {
-	cout << s_box[i];
-      }
-      cout << endl;
-      
-      // output L_i and R_i
-      cout << "L_" << setw(2) << r+1 << " = R_" << setw(2) << r << ": ";
-      for(int i = 0; i < 32; i++) {
-	L[r+1][i] = R[r][i] = s_box[i] ^ L[r-1][i];
-	cout << R[r][i];
-      }
-      cout << endl;
       //pause
-      PressEnterToContinue();
+      if(r != 16)
+	 PressEnterToContinue();
    }
+   
+   // IP_inverse
+   IP_inverse_calc();
+   hexAnswer = calc_hex(answer);
+   cout << "ciphertext: " <<  hexAnswer << endl; 
+   // convert to the hex string
+}
+
+string DES::calc_hex(int array[64]) {
+   string a;
+   int tmp = 0;
+   for(int i = 0; i < 16; i++) {
+      tmp = 0;
+      for(int j = 0; j < 4; j++) {
+	 tmp *= 2;
+	 tmp += array[i*4+j];
+      }
+      if(tmp < 10) {
+	 a += tmp + '0';
+      } else if(tmp >= 10) {
+	 a += tmp + 'A' - 10;
+      }
+   }
+   return a;
 }
 
 void DES::IP_calc() {
@@ -286,7 +329,11 @@ void DES::IP_calc() {
 }
 
 void DES::IP_inverse_calc() {
-
+   // assumes that the swap is not done
+   for(int i = 0; i < 64; i++) {
+      answer[i] = IP_inverse[i] < 32 ?
+	 R[16][IP_inverse[i]] : L[16][IP_inverse[i] - 32];
+   }
 }
 
 void DES::initialize_K() {
@@ -304,10 +351,6 @@ void DES::initialize_K() {
    for(int i = 0; i < 28; i++) {
       D[0][i] = key[PC1[i + 28]];
    }
-}
-
-void DES::round() {
-
 }
 
 void DES::E_calc(int r) {
@@ -336,42 +379,26 @@ void DES::K_calc(int r) {
 }
 
 void DES::S_box(int r) {
-  long long tmp = 0;
-  for(int i = 0; i < 48; i++) {
-    tmp *= 2;
-    tmp += E_i[i];
-  }
-  long long number = 0;
-  int row, col;
-  for(int s = 7; s >= 0; s--) {
-    row = tmp % 2;
-    tmp /=2;
-    col = tmp % 2;
-    tmp /= 2;
-    col += (tmp % 2) * 2;
-    tmp /= 2;
-    col += (tmp % 2) * 4;
-    tmp /= 2;
-    col += (tmp % 2) * 8;
-    tmp /= 2;
-    row += (tmp % 2) * 2;
-    tmp /= 2;
-    //cout << "row: " << row << " col: " << col << endl;
-    number += (S[s][row*16 + col])*(1 << (28 - s*4));
-    //cout << S[s][row*16 + col] << endl;
-  }
-  for(int i = 31; i >= 0; i--) {
-    s_box[i] = number % 2;
-    number /= 2;
-  }
+   long long number = 0;
+   int row, col;
+   for(int s = 0; s < 8; s++) {
+      row = E_i[s*6]*2 +E_i[s*6+5];
+      col = E_i[s*6+1]*8 + E_i[s*6+2]*4 + E_i[s*6+3]*2 + E_i[s*6+4];
+      number *= 16;
+      number += S[s][row*16 + col];
+   }
+   for(int i = 31; i >= 0; i--) {
+      s_box[i] = number % 2;
+      number /= 2;
+   }
 }
 
 void DES::f(int r) {
-  int tmp[32];
-  copy(s_box, s_box + 32, tmp); 
-  for(int i = 0; i < 32; i++) {
-    s_box[i] = tmp[P[i]];
-  }
+   int tmp[32];
+   copy(s_box, s_box + 32, tmp); 
+   for(int i = 0; i < 32; i++) {
+      s_box[i] = tmp[P[i]];
+   }
 }
 
 int main() {
