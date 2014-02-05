@@ -29,6 +29,7 @@ Make a pause for each round output.
 #include <iomanip>
 #include <cstdlib>
 #include <cstdio>
+#include <bitset>
 using namespace std;
 
 // found online at http://www.cplusplus.com/forum/articles/7312/
@@ -188,7 +189,7 @@ private:
    void E_calc(int);
    void K_calc(int);
    void S_box(int);
-   void f(int, int);
+   void f(int);
 
    // input message and key
    int message[64];
@@ -256,9 +257,21 @@ void DES::calculate() {
       }
       cout << endl;
       // output f(R_(i-1), K_i)
-
+      f(r);
+      cout << "f(R_" << left << setw(2) << r-1 << ", K_" << setw(2) << r 
+	   << ": ";
+      for(int i = 0; i < 32; i++) {
+	cout << s_box[i];
+      }
+      cout << endl;
+      
       // output L_i and R_i
-
+      cout << "L_" << setw(2) << r+1 << " = R_" << setw(2) << r << ": ";
+      for(int i = 0; i < 32; i++) {
+	L[r+1][i] = R[r][i] = s_box[i] ^ L[r-1][i];
+	cout << R[r][i];
+      }
+      cout << endl;
       //pause
       PressEnterToContinue();
    }
@@ -323,30 +336,42 @@ void DES::K_calc(int r) {
 }
 
 void DES::S_box(int r) {
-  int tmp = E_i[r];
-  int number = 0;
-  for(int s = 8; s >= 0; s--) {
-    int row = tmp % 2;
+  long long tmp = 0;
+  for(int i = 0; i < 48; i++) {
+    tmp *= 2;
+    tmp += E_i[i];
+  }
+  long long number = 0;
+  int row, col;
+  for(int s = 7; s >= 0; s--) {
+    row = tmp % 2;
     tmp /=2;
-    int col = tmp % 2;
+    col = tmp % 2;
     tmp /= 2;
     col += (tmp % 2) * 2;
     tmp /= 2;
     col += (tmp % 2) * 4;
     tmp /= 2;
-    row += (tmp % 2) * 8;
-    number += (S[s][row*8 + col])*(1 << (8 - s));
+    col += (tmp % 2) * 8;
+    tmp /= 2;
+    row += (tmp % 2) * 2;
+    tmp /= 2;
+    //cout << "row: " << row << " col: " << col << endl;
+    number += (S[s][row*16 + col])*(1 << (28 - s*4));
+    //cout << S[s][row*16 + col] << endl;
   }
-
   for(int i = 31; i >= 0; i--) {
     s_box[i] = number % 2;
-    number /=2;
+    number /= 2;
   }
-
 }
 
-void DES::f(int, int) {
-
+void DES::f(int r) {
+  int tmp[32];
+  copy(s_box, s_box + 32, tmp); 
+  for(int i = 0; i < 32; i++) {
+    s_box[i] = tmp[P[i]];
+  }
 }
 
 int main() {
