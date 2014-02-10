@@ -23,6 +23,7 @@
  
   Make a pause for each round output.  
 */
+
 #include <iostream>
 #include <algorithm>
 #include <sstream>
@@ -134,12 +135,11 @@ const int PC2[] = {13, 16, 10, 23,  0,  4,
 const int left_shift[] =
 {1,  1,  2,  2,  2,  2,  2,  2,  1,  2,  2,  2,  2,  2,  2,  1};
 
-// guaranted positive shift number
 void leftShift(int array[], const int &size, const int &shift) {
    int *tmp = new int[size];
    copy(array, array + size, tmp);
    for(int i = 0; i < size; i++) {
-      array[i] = tmp[(i + shift) % size];
+      array[i] = tmp[(i + shift + size) % size];
    }
    delete [] tmp;
 }
@@ -180,8 +180,10 @@ public:
    void inputKey(const string &k) {
       convert(k, key, 64);
    }
-   void calculate();
+   void encrypt();
+   void decrypt();
 private:
+   void calculate();
    void output(int [], int);
    void output(int [17][56], int, int);
    void output(int [17][32], int, int);
@@ -191,6 +193,7 @@ private:
    void initialize_K();
    void E_calc(int);
    void K_calc(int);
+   void K_calc_decrypt(int);
    void S_box(int);
    void f(int);
    string calc_hex(int [64]);
@@ -240,7 +243,6 @@ void DES::round(int r) {
    output(E_i, 48);
       
    // output K_i
-   K_calc(r);
    cout << "K_" << left << setw(2) << r << ": ";
    output(K, r, 48);
       
@@ -274,6 +276,26 @@ void DES::round(int r) {
    output(R, r, 32);
 }
 
+void DES::encrypt() {
+   initialize_K();
+   
+   for(int r = 1; r < 17; r++) {
+      K_calc(r);
+   }
+   calculate();
+
+}
+
+void DES::decrypt() {
+   initialize_K();
+   
+   for(int r = 1; r < 17; r++) {
+      K_calc_decrypt(r);
+   }
+   calculate();
+
+}
+
 void DES::calculate() {
    IP_calc();
    // output L0 and R0
@@ -284,8 +306,6 @@ void DES::calculate() {
    copy(R[0], R[0] + 32, L[1]);
    output(R, 0, 32);
 
-   initialize_K();
-  
    cin.get();
    for(int r = 1; r <= 16; r++) {
       round(r);
@@ -360,6 +380,24 @@ void DES::E_calc(int r) {
    }
 }
 
+void DES::K_calc_decrypt(int r) {
+   // next C and D are the previous C and D after the left shifts
+   copy(C[r-1], C[r-1] + 28, C[r]);
+   copy(D[r-1], D[r-1] + 28, D[r]);
+   // do left shifts to C and D
+   leftShift(C[r], 28, -left_shift[16-r+1]);
+   leftShift(D[r], 28, -left_shift[16-r+1]);
+   
+   // perform PC2 on combined C and D
+   int tmp[56];
+   copy(C[r], C[r] + 28, tmp);
+   copy(D[r], D[r] + 28, tmp + 28);
+   
+   for(int i = 0; i < 48; i++) {
+      K[r][i] = tmp[PC2[i]];
+   }
+}
+
 void DES::K_calc(int r) {
    // next C and D are the previous C and D after the left shifts
    copy(C[r-1], C[r-1] + 28, C[r]);
@@ -404,9 +442,48 @@ void DES::f(int r) {
 int main() {
 
    string M, K;
-   while(cin >> M >> K) {
-      DES answer(M, K);
-      answer.calculate();
+   bool keepGoing = true;
+   while(keepGoing) {
+      cout << "Would you like to use DES encryption(1) of DES decryption(2)? " << endl;
+      int a;
+      cin >> a;
+      DES answer;
+      switch (a) {
+	 case 1:
+	    cout << "Input the message to be encrypted: ";
+	    cin >> M;
+	    cout << "Input the key to encrypt the message: ";
+	    cin >> K;
+	    answer.inputMessage(M);
+	    answer.inputKey(K);
+	    answer.encrypt();
+	    break;
+	 case 2:
+	    cout << "input the ciphertext to be decrypted: ";
+	    cin >> M;
+	    cout << "Input the key to decrypt the message: ";
+	    cin >> K;
+	    answer.inputMessage(M);
+	    answer.inputKey(K);
+	    answer.decrypt();
+	    break;
+	 default:
+	    cout << "Not a valid answer." << endl;
+	    continue;
+      }
+      cout << endl;
+      cout << "Would you like to continue encrypting and decryption(y,n)" << endl;
+      char b;
+      cin >> b;
+      switch(b) {
+	 case 'y':
+	    break;
+	 case 'n':
+	    keepGoing = false;
+	    break;
+	 default:
+	    cout << "You will keep going, because I am to lazy to fix this input" << endl;
+      }
    }
    return 0;
 }
